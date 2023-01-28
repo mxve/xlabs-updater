@@ -6,6 +6,10 @@ pub struct Args {
         /// Installation directory
         #[clap(short, long, default_value = "xlabs")]
         pub directory: String,
+
+         /// Download launcher assets
+        #[clap(short, long)]
+        pub launcher: bool,
 }
 
 pub fn get() -> Args {

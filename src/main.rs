@@ -5,7 +5,6 @@ mod args;
 mod http;
 
 const MASTER_URL: &str = "https://updater.xlabs.dev";
-const SKIP_LAUNCHER_ASSETS: bool = true;
 
 #[derive(serde::Deserialize, serde::Serialize)]
 struct CdnFile {
@@ -42,9 +41,10 @@ fn main() {
     .unwrap();
 
     for file in cdn_info {
-        println!("{}", file.name);
+        
 
-        if SKIP_LAUNCHER_ASSETS && file.name.starts_with("launcher") {
+        if !args.launcher && (file.name.starts_with("launcher") || file.name.starts_with("cef")) {
+            println!("Skipping {}", file.name);
             continue;
         }
 
@@ -56,6 +56,7 @@ fn main() {
                 continue;
             }
         }
+        println!("Downloading {}", file.name);
         download(file, &file_path)
     }
 }
