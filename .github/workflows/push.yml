@@ -1,0 +1,25 @@
+name: indev
+
+on: push
+
+jobs:
+  indev:
+    strategy:
+      matrix:
+        os:
+          - ubuntu-20.04
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.os }}
+          path: target/debug/xlabs-updater*
