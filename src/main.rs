@@ -1,10 +1,10 @@
 use std::fs;
 use std::path::Path;
 
+mod args;
 mod http;
 
-const MASTER_URL: &str = "https://master.xlabs.dev";
-const INSTALL_PATH: &str = "xlabs";
+const MASTER_URL: &str = "https://updater.xlabs.dev";
 const SKIP_LAUNCHER_ASSETS: bool = true;
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -34,6 +34,8 @@ fn download(file: CdnFile, file_path: &Path) {
 }
 
 fn main() {
+    let args = args::get();
+
     let cdn_info: Vec<CdnFile> = serde_json::from_str(&http::get_body_string(
         format!("{}/{}", MASTER_URL, "files.json").as_str(),
     ))
@@ -46,8 +48,7 @@ fn main() {
             continue;
         }
 
-        let file_path = std::path::Path::new(INSTALL_PATH).join(&file.name);
-        // if file exists get sha1 hash and compare
+        let file_path = std::path::Path::new(&args.directory).join(&file.name);
         if file_path.exists() {
             let file_sha1 = file_get_sha1(&file_path);
             if file_sha1.to_uppercase() == file.hash {
@@ -58,3 +59,4 @@ fn main() {
         download(file, &file_path)
     }
 }
+
