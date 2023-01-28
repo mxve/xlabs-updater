@@ -41,8 +41,6 @@ fn main() {
     .unwrap();
 
     for file in cdn_info {
-        
-
         if !args.launcher && (file.name.starts_with("launcher") || file.name.starts_with("cef")) {
             println!("Skipping {}", file.name);
             continue;
@@ -60,4 +58,3 @@ fn main() {
         download(file, &file_path)
     }
 }
-
