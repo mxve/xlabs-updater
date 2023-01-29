@@ -139,7 +139,7 @@ fn update_iw4x_rawfiles(iw4x_path: PathBuf) {
 
 fn main() {
     let mut args = args::get();
-    let config_path = Path::new(&args.directory).join("config.json");
+    let config_path = Path::new(&args.directory).join("xlabs-updater.json");
     let mut config = load_config(&config_path);
 
     update(PathBuf::from(&args.directory), args.launcher);
