@@ -3,9 +3,15 @@ use std::{fs, io::Write, path::Path, str};
 
 pub fn get_body(url: &str) -> Vec<u8> {
     let mut res: Vec<u8> = Vec::new();
-    let req = http_req::request::get(url, &mut res).unwrap_or_else(|error| {
-        panic!("\n\n{}:\n{:?}", "Error".bright_red(), error);
-    });
+    let req = http_req::request::Request::new(&url.try_into().unwrap())
+        .header(
+            "User-Agent",
+            "X Labs Updater | github.com/mxve/xlabs-updater",
+        )
+        .send(&mut res)
+        .unwrap_or_else(|error| {
+            panic!("\n\n{}:\n{:?}", "Error".bright_red(), error);
+        });
 
     if req.status_code() == http_req::response::StatusCode::new(302) {
         let location = req.headers().get("Location").unwrap().as_str();
