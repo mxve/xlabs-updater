@@ -5,6 +5,12 @@ mod args;
 mod http;
 
 const MASTER_URL: &str = "https://updater.xlabs.dev";
+const IW4X_RAWFILES_API_URL: &str =
+    "https://api.github.com/repos/XLabsProject/iw4x-rawfiles/releases/latest";
+const IW4X_RAWFILES_UPDATE_URL: &str =
+    "https://github.com/XLabsProject/iw4x-rawfiles/releases/latest/download/release.zip";
+const IW4X_RAWFILES_VERSION_FILE: &str = ".version.json";
+const UPDATER_CONFIG_FILE: &str = "xlabs-updater.json";
 
 #[derive(serde::Deserialize, serde::Serialize)]
 struct CdnFile {
@@ -65,7 +71,8 @@ fn update(path: PathBuf, include_launcher: bool) {
     .unwrap();
 
     for file in cdn_info {
-        if !include_launcher && (file.name.starts_with("launcher") || file.name.starts_with("cef")) {
+        if !include_launcher && (file.name.starts_with("launcher") || file.name.starts_with("cef"))
+        {
             println!("Skipping {}", file.name);
             continue;
         }
@@ -85,17 +92,13 @@ fn update(path: PathBuf, include_launcher: bool) {
 
 fn update_iw4x_rawfiles(iw4x_path: PathBuf) {
     let iw4x_rawfiles_version_local = &parse_json_get_value(
-        &fs::read_to_string(iw4x_path.join(".version.json"))
+        &fs::read_to_string(iw4x_path.join(IW4X_RAWFILES_VERSION_FILE))
             .unwrap_or_else(|_| "{\"rawfile_version\":\"v0.0.0\"}".to_string()),
         "rawfile_version",
     );
 
-    let iw4x_rawfiles_version_remote = &parse_json_get_value(
-        &http::get_body_string(
-            "https://api.github.com/repos/XLabsProject/iw4x-rawfiles/releases/latest",
-        ),
-        "tag_name",
-    );
+    let iw4x_rawfiles_version_remote =
+        &parse_json_get_value(&http::get_body_string(IW4X_RAWFILES_API_URL), "tag_name");
 
     if version_to_int(iw4x_rawfiles_version_local) >= version_to_int(iw4x_rawfiles_version_remote) {
         println!("iw4x rawfiles are up to date");
@@ -103,8 +106,7 @@ fn update_iw4x_rawfiles(iw4x_path: PathBuf) {
     }
 
     println!("Downloading iw4x rawfiles");
-    let update_url =
-        "https://github.com/XLabsProject/iw4x-rawfiles/releases/latest/download/release.zip";
+    let update_url = IW4X_RAWFILES_UPDATE_URL;
     let temp_file = std::env::temp_dir().join("release.zip");
     http::download_file(update_url, &temp_file);
 
@@ -131,7 +133,7 @@ fn update_iw4x_rawfiles(iw4x_path: PathBuf) {
     fs::remove_file(temp_file).unwrap();
 
     fs::write(
-        iw4x_path.join(".version.json"),
+        iw4x_path.join(IW4X_RAWFILES_VERSION_FILE),
         format!("{{\"rawfile_version\":{}}}", iw4x_rawfiles_version_remote),
     )
     .expect("Error writing iw4x rawfiles version file");
@@ -139,7 +141,7 @@ fn update_iw4x_rawfiles(iw4x_path: PathBuf) {
 
 fn main() {
     let mut args = args::get();
-    let config_path = Path::new(&args.directory).join("xlabs-updater.json");
+    let config_path = Path::new(&args.directory).join(UPDATER_CONFIG_FILE);
     let mut config = load_config(&config_path);
 
     update(PathBuf::from(&args.directory), args.launcher);
