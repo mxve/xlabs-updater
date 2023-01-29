@@ -10,10 +10,15 @@ pub struct Args {
     /// Download launcher assets
     #[clap(short, long)]
     pub launcher: bool,
+
+    /// iw4x path
+    #[clap(long, default_value = "")]
+    pub iw4x_path: String,
 }
 
 pub fn get() -> Args {
     let mut args = Args::parse();
     args.directory = args.directory.replace('"', "");
+    args.iw4x_path = args.iw4x_path.replace('"', "");
     args
 }
