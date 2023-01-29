@@ -35,7 +35,7 @@ fn download(file: CdnFile, file_path: &Path) {
 fn load_config(path: &PathBuf) -> serde_json::Value {
     if path.exists() {
         let config: serde_json::Value =
-            serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+            serde_json::from_str(&fs::read_to_string(path).unwrap()).unwrap();
         return config;
     }
     serde_json::Value::Null
@@ -56,9 +56,36 @@ fn parse_json_get_value(json: &str, key: &str) -> String {
     json[key].to_string()
 }
 
+fn update(path: PathBuf, include_launcher: bool) {
+    println!("Getting X Labs file list");
+
+    let cdn_info: Vec<CdnFile> = serde_json::from_str(&http::get_body_string(
+        format!("{}/{}", MASTER_URL, "files.json").as_str(),
+    ))
+    .unwrap();
+
+    for file in cdn_info {
+        if !include_launcher && (file.name.starts_with("launcher") || file.name.starts_with("cef")) {
+            println!("Skipping {}", file.name);
+            continue;
+        }
+
+        let file_path = path.join(&file.name);
+        if file_path.exists() {
+            let file_sha1 = file_get_sha1(&file_path);
+            if file_sha1.to_uppercase() == file.hash {
+                println!("Checked {}", file.name);
+                continue;
+            }
+        }
+        println!("Downloading {}", file.name);
+        download(file, &file_path)
+    }
+}
+
 fn update_iw4x_rawfiles(iw4x_path: PathBuf) {
     let iw4x_rawfiles_version_local = &parse_json_get_value(
-        &std::fs::read_to_string(iw4x_path.join(".version.json"))
+        &fs::read_to_string(iw4x_path.join(".version.json"))
             .unwrap_or_else(|_| "{\"rawfile_version\":\"v0.0.0\"}".to_string()),
         "rawfile_version",
     );
@@ -82,7 +109,7 @@ fn update_iw4x_rawfiles(iw4x_path: PathBuf) {
     http::download_file(update_url, &temp_file);
 
     println!("Unpacking iw4x rawfiles to {}", iw4x_path.display());
-    let mut archive = zip::ZipArchive::new(std::fs::File::open(&temp_file).unwrap()).unwrap();
+    let mut archive = zip::ZipArchive::new(fs::File::open(&temp_file).unwrap()).unwrap();
     for i in 0..archive.len() {
         let mut file = archive.by_index(i).unwrap();
         let outpath = iw4x_path.join(file.name());
@@ -112,33 +139,10 @@ fn update_iw4x_rawfiles(iw4x_path: PathBuf) {
 
 fn main() {
     let mut args = args::get();
-    let config_path = std::path::Path::new(&args.directory).join("config.json");
+    let config_path = Path::new(&args.directory).join("config.json");
     let mut config = load_config(&config_path);
 
-    println!("Getting X Labs file list");
-
-    let cdn_info: Vec<CdnFile> = serde_json::from_str(&http::get_body_string(
-        format!("{}/{}", MASTER_URL, "files.json").as_str(),
-    ))
-    .unwrap();
-
-    for file in cdn_info {
-        if !args.launcher && (file.name.starts_with("launcher") || file.name.starts_with("cef")) {
-            println!("Skipping {}", file.name);
-            continue;
-        }
-
-        let file_path = std::path::Path::new(&args.directory).join(&file.name);
-        if file_path.exists() {
-            let file_sha1 = file_get_sha1(&file_path);
-            if file_sha1.to_uppercase() == file.hash {
-                println!("Checked {}", file.name);
-                continue;
-            }
-        }
-        println!("Downloading {}", file.name);
-        download(file, &file_path)
-    }
+    update(PathBuf::from(&args.directory), args.launcher);
 
     if args.iw4x_path.is_empty() {
         if config["iw4x_path"].is_string() {
