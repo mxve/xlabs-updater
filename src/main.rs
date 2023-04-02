@@ -25,15 +25,20 @@ fn file_get_sha1(path: &Path) -> String {
     sha1.digest().to_string()
 }
 
-fn download(file: CdnFile, file_path: &Path) {
+fn download(file: CdnFile, file_path: &Path, dev: bool) {
     if let Some(parent) = file_path.parent() {
         if !parent.exists() {
             fs::create_dir_all(parent).unwrap();
         }
     }
 
+    let mut dir: &str = "data";
+    if dev {
+        dir = "data-dev";
+    }
+
     http::download_file(
-        format!("{}/{}/{}", MASTER_URL, "data", file.name).as_str(),
+        format!("{}/{}/{}", MASTER_URL, dir, file.name).as_str(),
         file_path,
     );
 }
@@ -62,11 +67,16 @@ fn parse_json_get_value(json: &str, key: &str) -> String {
     json[key].to_string()
 }
 
-fn update(path: PathBuf, include_launcher: bool) {
+fn update(path: PathBuf, include_launcher: bool, dev: bool) {
     println!("Getting X Labs file list");
 
+    let mut info_file: &str = "files.json";
+    if dev {
+        info_file = "files-dev.json";
+    }
+
     let cdn_info: Vec<CdnFile> = serde_json::from_str(&http::get_body_string(
-        format!("{}/{}", MASTER_URL, "files.json").as_str(),
+        format!("{}/{}", MASTER_URL, info_file).as_str(),
     ))
     .unwrap();
 
@@ -86,7 +96,7 @@ fn update(path: PathBuf, include_launcher: bool) {
             }
         }
         println!("Downloading {}", file.name);
-        download(file, &file_path)
+        download(file, &file_path, dev);
     }
 }
 
@@ -144,7 +154,11 @@ fn main() {
     let config_path = Path::new(&args.directory).join(UPDATER_CONFIG_FILE);
     let mut config = load_config(&config_path);
 
-    update(PathBuf::from(&args.directory), args.launcher);
+    if args.dev {
+        println!("Updating from dev branch");
+    }
+
+    update(PathBuf::from(&args.directory), args.launcher, args.dev);
 
     if args.iw4x_path.is_empty() {
         if config["iw4x_path"].is_string() {

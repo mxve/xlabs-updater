@@ -14,6 +14,10 @@ pub struct Args {
     /// iw4x path
     #[clap(long, default_value = "")]
     pub iw4x_path: String,
+
+    /// Update from dev branch
+    #[clap(long)]
+    pub dev: bool,
 }
 
 pub fn get() -> Args {

@@ -18,3 +18,5 @@ Latest release
 - ```--iw4x-path```
   - Set IW4x game path
   - Needs to be set at least once to install/update IW4x rawfiles. Last path is saved to xlabs-updater.json inside the install dir (-d) and will be used if no path is specified.
+- ```--dev```
+  - Update from dev branch
