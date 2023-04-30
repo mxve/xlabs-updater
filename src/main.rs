@@ -117,7 +117,13 @@ fn update_iw4x_rawfiles(iw4x_path: PathBuf) {
 
     println!("Downloading iw4x rawfiles");
     let update_url = IW4X_RAWFILES_UPDATE_URL;
-    let temp_file = std::env::temp_dir().join("release.zip");
+
+    let mut temp_dir = std::env::temp_dir();
+    if !temp_dir.is_dir() {
+        temp_dir = iw4x_path.clone();
+    }
+    let temp_file = temp_dir.join("iw4xrawfiles_temp.zip");
+
     http::download_file(update_url, &temp_file);
 
     println!("Unpacking iw4x rawfiles to {}", iw4x_path.display());
